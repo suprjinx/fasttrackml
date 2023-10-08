@@ -1,7 +1,7 @@
 import http from 'k6/http';
 
 export default function () {
-  const base_url = 'http://localhost:5000/api/2.0/mlflow/';
+  const base_url = 'http://service:5000/api/2.0/mlflow/';
 
   const run_response = http.post(
     base_url + 'runs/create',

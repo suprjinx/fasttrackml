@@ -147,6 +147,15 @@ test-python-integration-aim: build ## run the Aim python integration tests.
 	@echo ">>> Running Aim python integration tests."
 	tests/integration/python/aim/test.sh
 
+PHONY: test-k6-performance
+test-k6-performance: service-restart
+	@echo ">>> Running k6 performance tests."
+	@COMPOSE_FILE=$(COMPOSE_FILE) COMPOSE_PROJECT_NAME=$(COMPOSE_PROJECT_NAME) \
+	    docker-compose run performance-tests
+	@COMPOSE_FILE=$(COMPOSE_FILE) COMPOSE_PROJECT_NAME=$(COMPOSE_PROJECT_NAME) \
+		docker-compose down -v --remove-orphans
+
+
 #
 # Service test targets
 #
