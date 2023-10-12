@@ -2,40 +2,46 @@ package main
 
 import (
 	"fmt"
+	"testing"
 
 	_ "github.com/cznic/ql/driver"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	log "github.com/sirupsen/logrus"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type Example struct {
 	ID   uint `gorm:"primary_key"`
 	Name string
+	Data map[string]interface{} `gorm:"type:json"`
 }
 
-func main() {
-	var db *gorm.DB
+func TestJsonColumn(t *testing.T) {
 	dialects := []string{"duckdb", "postgres", "sqlite3"}
 
 	// Open a connection to each database
 	for _, dialect := range dialects {
-		err := openConnection(dialect)
+		var db *gorm.DB
+		defer db.Close()
+		db, err := gorm.Open(conn)
+		if err != nil {
+			db.Close()
+			return nil, eris.Wrap(err, "failed to connect to database")
+		}
 		if err != nil {
 			fmt.Printf("Failed to connect to %s database: %v\n", dialect, err)
 			continue
 		}
 		fmt.Printf("Connected to %s database successfully!\n", dialect)
-	}
-	defer db.Close()
 
-	// Create a simple table for the connected database
-	err = createTable()
-	if err != nil {
-		fmt.Println("Failed to create the table:", err)
-		return
+		// Create a simple table for the connected database
+		err = createTable(db)
+		if err != nil {
+			fmt.Println("Failed to create the table:", err)
+			return
+		}
+		fmt.Println("Table created successfully!")
 	}
-	fmt.Println("Table created successfully!")
 }
 
 func openConnection(dialect string) (*gorm.DB, error) {
