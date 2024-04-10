@@ -121,27 +121,33 @@ func (r MetricRepository) SearchMetrics(
 	}
 
 	var runs []models.Run
-	if tx := r.db.WithContext(ctx).
-		InnerJoins(
-			"Experiment",
-			r.db.WithContext(ctx).Select(
-				"ID", "Name",
-			).Where(&models.Experiment{NamespaceID: namespaceID}),
-		).
+	tx := r.db.WithContext(ctx)
+	tx.InnerJoins(
+		"Experiment",
+		r.db.WithContext(ctx).Select(
+			"ID", "Name",
+		).Where(&models.Experiment{NamespaceID: namespaceID}),
+	).
 		Preload("Params").
 		Preload("Tags").
 		Where("run_uuid IN (?)", pq.Filter(r.db.WithContext(ctx).
 			Select("runs.run_uuid").
 			Table("runs").
 			Joins(
-				"INNER JOIN experiments ON experiments.experiment_id = runs.experiment_id AND experiments.namespace_id = ?",
+				`INNER JOIN experiments ON experiments.experiment_id = runs.experiment_id
+			        AND experiments.namespace_id = ?`,
 				namespaceID,
 			).
 			Joins("JOIN latest_metrics USING(run_uuid)").
 			Joins("JOIN contexts ON latest_metrics.context_id = contexts.id"),
 		)).
-		Order("runs.row_num DESC").
-		Find(&runs); tx.Error != nil {
+		Order("runs.row_num DESC")
+
+	if len(req.Experiments) != 0 {
+		tx.Where("experiments.experiment_id IN ?", req.Experiments)
+	}
+
+	if tx.Find(&runs).Error != nil {
 		return nil, 0, nil, eris.Wrap(err, "error searching metrics")
 	}
 
